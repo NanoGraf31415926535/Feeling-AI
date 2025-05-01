@@ -1,0 +1,33 @@
+{
+  "ai": {
+    "probingAgentPrompt": {
+      "withUserName": "The user's name is {{userName}}. The current conversation history (last 5 messages) is: {{conversation}}. The user's last message is: {{userMessage}}. Based on this, generate a thoughtful and open-ended question or statement to encourage deeper reflection and emotional expression from the user. Avoid simple yes/no questions and aim for responses that elicit feelings, experiences, or perspectives.",
+      "withoutUserName": "The current conversation history (last 5 messages) is: {{conversation}}. The user's last message is: {{userMessage}}. Based on this, generate a thoughtful and open-ended question or statement to encourage deeper reflection and emotional expression from the user. Avoid simple yes/no questions and aim for responses that elicit feelings, experiences, or perspectives."
+    },
+    "securityAgentPrompt": "Analyze the following user message for any potentially harmful, offensive, or inappropriate content: '{{userMessage}}'. Respond with 'SAFE' if the message appears to be acceptable, and 'DANGER' if it contains problematic content that should not be processed further.",
+    "empathyAgentPrompt": "The user's last message is: '{{userMessage}}'. Based on this, provide a brief and empathetic response that acknowledges their feelings.",
+    "encouragementAgentPrompt": "The user's last message is: '{{userMessage}}'. Offer a short, encouraging message or a positive affirmation to help them feel supported.",
+    "deepDiveAgentPrompt": "The user's last message is: '{{userMessage}}'. The recent conversation history (last 5 messages) is: {{conversationHistory}}. The user's name is: {{userName}}. Ask a thoughtful and open-ended question that encourages deeper self-reflection related to the user's current emotional state or the topics discussed.",
+    "moodBoosterAgentPrompt": "The user's last message is: '{{userMessage}}'. If appropriate for a lighthearted moment, tell a short, positive joke or share a brief, interesting fact.",
+    "brainAgentPrompt": "The user's last message was: '{{userMessage}}'. The recent conversation history (last 5 messages) is: {{conversationHistory}}. The user's name is: {{userName}}. The detected sentiment of the user's last message is: '{{sentiment}}'. Based on this context, decide which of the following specialized agents (empathy, encouragement, deepDive, moodBooster, probing) would be most helpful to respond next. Return a JSON object with an array of agent names to call, for example: {\"agentsToCall\": [\"empathy\", \"encouragement\"]}. Consider the user's emotional state, the conversation flow, and the goal of providing emotional support and deeper conversation."
+  },
+  "locales": {
+    "chatHeading": "Emotional Support Chat",
+    "inputPlaceholder": "Type your message...",
+    "sendButtonLabel": "Send",
+    "clearButtonLabel": "Clear Chat",
+    "saveConversationPrompt": "Enter a name for this conversation:",
+    "headerSave": "Save",
+    "chatHistoryHeading": "Chat History",
+    "noSavedChats": "No saved chats yet.",
+    "loadChatButton": "Load Chat",
+    "deleteChatButton": "Delete Chat",
+    "editButton": "Edit",
+    "saveEditButton": "Save",
+    "cancelEditButton": "Cancel",
+    "backButtonLabel": "Back",
+    "aiDisclaimer": "Please remember that this AI is designed to provide support and encouragement. It is not a substitute for professional mental health advice. If you are in distress, please seek help from a qualified professional.",
+    "welcomeMessage": "Hello! I'm here to listen and support you. How are you feeling today?",
+    "securityAlertMessage": "I've detected potentially harmful content in your message and cannot process it further. Please be mindful of your language."
+  }
+}
