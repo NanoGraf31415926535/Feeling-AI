@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { BiPlus, BiSearch, BiCalendarAlt, BiTag, BiTrash, BiPencil } from 'react-icons/bi';
 
 const Journal = () => {
+  const navigate = useNavigate(); // Initialize useNavigate
   const [entries, setEntries] = useState([]);
   const [newEntryText, setNewEntryText] = useState('');
   const [newEntryTags, setNewEntryTags] = useState(''); // New state for tags
@@ -199,6 +201,10 @@ const Journal = () => {
     setSearchText(event.target.value);
   };
 
+  const handleGoBack = () => {
+    navigate(-1); // Go back to the previous page
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-300 p-4 flex flex-col">
       {/* Top Navigation */}
@@ -207,6 +213,9 @@ const Journal = () => {
         <div>
           <button onClick={() => setIsAddingNew(true)} className="bg-green-500 hover:bg-green-400 text-white font-semibold py-2 px-3 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
             <BiPlus className="inline-block mr-1" /> New
+          </button>
+          <button onClick={handleGoBack} className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Back
           </button>
         </div>
       </div>

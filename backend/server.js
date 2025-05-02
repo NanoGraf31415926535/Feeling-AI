@@ -2,109 +2,106 @@ const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcrypt'); // For password hashing
-const jwt = require('jsonwebtoken'); // For creating JWTs
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const stripe = require('stripe')('');
 const app = express();
 const port = 5001;
 
-// Secret key for JWT (keep this secure and in an environment variable in production)
 const JWT_SECRET = 'your-super-secret-key';
 
-// Enable CORS
 const corsOptions = {
   origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'], // Add Authorization header
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));
-
-// Middleware to parse JSON request bodies
 app.use(express.json());
 
-// Initialize the database
 const db = new sqlite3.Database('./journal.db', (err) => {
   if (err) {
     console.error('Could not connect to the database', err);
     throw err;
   }
   console.log('Connected to the journal database.');
-  db.run(`
-    CREATE TABLE IF NOT EXISTS entries (
-      id TEXT PRIMARY KEY,
-      text TEXT NOT NULL,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      tags TEXT DEFAULT ''
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      displayName TEXT,
-      theme TEXT DEFAULT 'dark',
-      notificationsEnabled INTEGER DEFAULT 1,
-      preferredLanguage TEXT DEFAULT 'en',
-      fontSize TEXT DEFAULT 'medium'
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS articles (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      summary TEXT,
-      content TEXT NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
 
-  db.all("PRAGMA table_info(users)", [], (err, rows) => {
-    if (err) {
-      console.error("Error getting table info:", err.message);
-      return;
-    }
-    const columns = rows ? rows.map(columnInfo => columnInfo.name) : [];
+  db.serialize(() => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS entries (
+        id TEXT PRIMARY KEY,
+        text TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        tags TEXT DEFAULT '',
+        userId INTEGER
+      )
+    `);
 
-    const addColumnIfNotExists = (columnName, columnDefinition) => {
-      if (!columns.includes(columnName)) {
-        db.run(`ALTER TABLE users ADD COLUMN ${columnName} ${columnDefinition}`, (err) => {
-          if (err) {
-            console.error(`Error adding column ${columnName}:`, err.message);
-          } else {
-            console.log(`Column ${columnName} added successfully.`);
-          }
-        });
-      } else {
-        console.log(`Column ${columnName} already exists.`);
+    db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        displayName TEXT,
+        theme TEXT DEFAULT 'dark',
+        notificationsEnabled INTEGER DEFAULT 1,
+        preferredLanguage TEXT DEFAULT 'en',
+        fontSize TEXT DEFAULT 'medium'
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS articles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        summary TEXT,
+        content TEXT NOT NULL,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    db.all("PRAGMA table_info(users)", [], (err, rows) => {
+      if (err) {
+        console.error("Error getting table info:", err.message);
+        return;
       }
-    };
+      const columns = rows ? rows.map(columnInfo => columnInfo.name) : [];
 
-    addColumnIfNotExists('displayName', 'TEXT');
-    addColumnIfNotExists('theme', 'TEXT DEFAULT \'dark\'');
-    addColumnIfNotExists('notificationsEnabled', 'INTEGER DEFAULT 1');
-    addColumnIfNotExists('preferredLanguage', 'TEXT DEFAULT \'en\'');
-    addColumnIfNotExists('fontSize', 'TEXT DEFAULT \'medium\'');
+      const addColumnIfNotExists = (columnName, columnDefinition) => {
+        if (!columns.includes(columnName)) {
+          db.run(`ALTER TABLE users ADD COLUMN ${columnName} ${columnDefinition}`, (err) => {
+            if (err) {
+              console.error(`Error adding column ${columnName}:`, err.message);
+            } else {
+              console.log(`Column ${columnName} added successfully.`);
+            }
+          });
+        } else {
+          console.log(`Column ${columnName} already exists.`);
+        }
+      };
+
+      addColumnIfNotExists('displayName', 'TEXT');
+      addColumnIfNotExists('theme', 'TEXT DEFAULT \'dark\'');
+      addColumnIfNotExists('notificationsEnabled', 'INTEGER DEFAULT 1');
+      addColumnIfNotExists('preferredLanguage', 'TEXT DEFAULT \'en\'');
+      addColumnIfNotExists('fontSize', 'TEXT DEFAULT \'medium\'');
+    });
   });
 });
 
-// JWT Authentication Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (token == null) return res.sendStatus(401);
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403); // Invalid token
+    if (err) return res.sendStatus(403);
     req.user = user;
     next();
   });
 };
 
-// --- Authentication Routes ---
-
-// User Registration
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -122,7 +119,7 @@ app.post('/api/register', async (req, res) => {
         return res.status(500).json({ error: 'Failed to register user.' });
       }
       const userId = this.lastID;
-      const token = jwt.sign({ userId, username }, JWT_SECRET, { expiresIn: '1h' }); // Token expires in 1 hour
+      const token = jwt.sign({ userId, username }, JWT_SECRET, { expiresIn: '1h' });
       res.status(201).json({ message: 'User registered successfully', token });
     });
   } catch (error) {
@@ -131,7 +128,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// User Login
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -161,9 +157,6 @@ app.post('/api/login', async (req, res) => {
   });
 });
 
-// --- User Settings Routes ---
-
-// GET user settings (protected)
 app.get('/api/settings', authenticateToken, (req, res) => {
   db.get('SELECT displayName, theme, notificationsEnabled, preferredLanguage, fontSize FROM users WHERE id = ?', [req.user.userId], (err, row) => {
     if (err) {
@@ -178,7 +171,6 @@ app.get('/api/settings', authenticateToken, (req, res) => {
   });
 });
 
-// POST user settings (protected)
 app.post('/api/settings', authenticateToken, (req, res) => {
   const { displayName, theme, notificationsEnabled, preferredLanguage, fontSize } = req.body;
   const userId = req.user.userId;
@@ -199,17 +191,13 @@ app.post('/api/settings', authenticateToken, (req, res) => {
   );
 });
 
-// DELETE user account (protected)
 app.delete('/api/account', authenticateToken, (req, res) => {
   const userId = req.user.userId;
 
-  // First, delete associated journal entries (optional, depending on your needs)
   db.run('DELETE FROM entries WHERE userId = ?', [userId], function(err) {
     if (err) {
       console.error('Error deleting journal entries:', err.message);
-      // Optionally, you might want to handle this differently (e.g., still delete the user)
     }
-    // Then, delete the user account
     db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
       if (err) {
         console.error('Error deleting user account:', err.message);
@@ -224,9 +212,6 @@ app.delete('/api/account', authenticateToken, (req, res) => {
   });
 });
 
-// --- Journal Routes ---
-
-// GET all journal entries (protected)
 app.get('/api/journal', authenticateToken, (req, res) => {
   db.all('SELECT id, text, timestamp, tags FROM entries ORDER BY timestamp DESC', [], (err, rows) => {
     if (err) {
@@ -238,7 +223,6 @@ app.get('/api/journal', authenticateToken, (req, res) => {
   });
 });
 
-// POST a new journal entry (protected)
 app.post('/api/journal', authenticateToken, (req, res) => {
   const { text, tags } = req.body;
   if (!text) {
@@ -261,7 +245,6 @@ app.post('/api/journal', authenticateToken, (req, res) => {
   });
 });
 
-// PUT (update) a journal entry (protected)
 app.put('/api/journal/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { text, tags } = req.body;
@@ -288,7 +271,6 @@ app.put('/api/journal/:id', authenticateToken, (req, res) => {
   });
 });
 
-// DELETE a journal entry (protected)
 app.delete('/api/journal/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   db.run('DELETE FROM entries WHERE id = ? AND userId = ?', [id, req.user.userId], function(err) {
@@ -304,7 +286,6 @@ app.delete('/api/journal/:id', authenticateToken, (req, res) => {
   });
 });
 
-// Donate endpoint (no authentication required for donations in this basic example)
 app.post('/api/donate', async (req, res) => {
   const { amount, paymentMethodId } = req.body;
 
@@ -324,7 +305,6 @@ app.post('/api/donate', async (req, res) => {
 
     if (paymentIntent.status === 'succeeded') {
       res.json({ success: true });
-      // Optionally store donation info in the database (consider user association if logged in)
     } else {
       res.status(400).json({ error: 'Payment failed.' });
     }
@@ -334,9 +314,6 @@ app.post('/api/donate', async (req, res) => {
   }
 });
 
-// --- Articles Route ---
-
-// GET all articles (protected)
 app.get('/api/articles', authenticateToken, async (req, res) => {
   try {
     db.all('SELECT id, title, summary FROM articles ORDER BY createdAt DESC', [], (err, rows) => {
@@ -362,7 +339,7 @@ app.get('/api/articles/:id', authenticateToken, async (req, res) => {
         return res.status(500).json({ error: 'Failed to retrieve article.' });
       }
       if (row) {
-        res.json(row); // Send the article data as JSON
+        res.json(row);
       } else {
         res.status(404).json({ error: 'Article not found.' });
       }
@@ -383,7 +360,7 @@ app.delete('/api/articles/:id', authenticateToken, async (req, res) => {
         return res.status(500).json({ error: `Failed to delete article with ID ${id}.` });
       }
       if (this.changes > 0) {
-        res.status(204).send(); // 204 No Content for successful deletion
+        res.status(204).send();
       } else {
         res.status(404).json({ error: `Article with ID ${id} not found.` });
       }
@@ -394,8 +371,6 @@ app.delete('/api/articles/:id', authenticateToken, async (req, res) => {
   }
 });
 
-
-// POST a new article (protected)
 app.post('/api/articles', authenticateToken, async (req, res) => {
   const { title, summary, content } = req.body;
 

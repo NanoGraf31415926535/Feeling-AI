@@ -9,6 +9,7 @@
     "encouragementAgentPrompt": "The user's last message is: '{{userMessage}}'. Offer a short, encouraging message or a positive affirmation to help them feel supported.",
     "deepDiveAgentPrompt": "The user's last message is: '{{userMessage}}'. The recent conversation history (last 5 messages) is: {{conversationHistory}}. The user's name is: {{userName}}. Ask a thoughtful and open-ended question that encourages deeper self-reflection related to the user's current emotional state or the topics discussed.",
     "moodBoosterAgentPrompt": "The user's last message is: '{{userMessage}}'. If appropriate for a lighthearted moment, tell a short, positive joke or share a brief, interesting fact.",
+    "summarizingAgentPrompt": "Summarize the following conversation: {{messagesText}}",
     "brainAgentPrompt": "The user's last message was: '{{userMessage}}'. The recent conversation history (last 5 messages) is: {{conversationHistory}}. The user's name is: {{userName}}. The detected sentiment of the user's last message is: '{{sentiment}}'. Based on this context, decide which of the following specialized agents (empathy, encouragement, deepDive, moodBooster, probing) would be most helpful to respond next. Return a JSON object with an array of agent names to call, for example: {\"agentsToCall\": [\"empathy\", \"encouragement\"]}. Consider the user's emotional state, the conversation flow, and the goal of providing emotional support and deeper conversation."
   },
   "locales": {
