@@ -41,13 +41,13 @@ To run this project locally, you will need to have Node.js and npm (or yarn) ins
 
 2.  **Install frontend dependencies:**
     ```bash
-    cd frontend  # Assuming your React app is in a 'frontend' directory
+    cd feeling-ai-app
     npm install   # or yarn install
     ```
 
 3.  **Install backend dependencies (if applicable):**
     ```bash
-    cd backend  # Assuming your backend is in a 'backend' directory
+    cd backend  
     npm install   # or yarn install
     ```
 
